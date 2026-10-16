@@ -104,6 +104,11 @@ public static class FortnoxOAuth
         if (status >= 500)
             return new FortnoxException(ErrorCode.Network, "The Fortnox OAuth server returned an error.", detail, "Retry once, then stop.");
 
+        if (body.Contains("invalid_client", StringComparison.Ordinal))
+            return FortnoxException.Auth(
+                "Fortnox rejected the client id or client secret.", detail,
+                "Check both in the Fortnox developer portal, then: fortnox accounts add <name> --client-id <id> --force");
+
         // invalid_grant on refresh means the refresh token was used already (they rotate), has
         // passed its 45 days, or the consent was revoked. Only a new consent fixes any of those.
         return grant switch

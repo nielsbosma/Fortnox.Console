@@ -41,6 +41,7 @@ app.Configure(config =>
         {
             branch.SetDescription(resource.Description);
             var one = resource.Singular.ToLowerInvariant();
+            var aOne = ("aeiou".Contains(one[0]) ? "an " : "a ") + one;
 
             if (resource.Ops.HasFlag(Ops.List))
                 branch.AddCommand<ListCommand>("list").WithData(resource)
@@ -50,16 +51,16 @@ app.Configure(config =>
                     .WithDescription($"Get one {one} by {resource.IdField}");
             if (resource.Ops.HasFlag(Ops.Create))
                 branch.AddCommand<CreateCommand>("create").WithData(resource)
-                    .WithDescription($"Create a {one}");
+                    .WithDescription($"Create {aOne}");
             if (resource.Ops.HasFlag(Ops.Update))
                 branch.AddCommand<UpdateCommand>("update").WithData(resource)
-                    .WithDescription($"Update a {one} (only the fields given)");
+                    .WithDescription($"Update {aOne} (only the fields given)");
             if (resource.Ops.HasFlag(Ops.Delete))
                 branch.AddCommand<DeleteCommand>("delete").WithData(resource)
-                    .WithDescription($"Delete a {one} (needs --yes)");
+                    .WithDescription($"Delete {aOne} (needs --yes)");
             if (resource.Pdf)
                 branch.AddCommand<PdfCommand>("pdf").WithData(resource)
-                    .WithDescription($"Download a {one} as PDF");
+                    .WithDescription($"Download {aOne} as PDF");
 
             foreach (var action in resource.AllActions)
                 branch.AddCommand<ActionCommand>(action.Name).WithData(new ActionData(resource, action))
