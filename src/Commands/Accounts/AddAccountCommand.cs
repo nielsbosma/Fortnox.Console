@@ -82,7 +82,7 @@ public sealed class AddAccountCommand : AsyncCommand<AddAccountCommand.Settings>
         if (string.IsNullOrWhiteSpace(secret)) secret = Prompt(name);
         if (string.IsNullOrWhiteSpace(secret)) throw FortnoxException.Invalid("A client secret is required.");
 
-        var scopes = string.IsNullOrWhiteSpace(settings.Scopes) ? Resources.DefaultScopes : settings.Scopes.Trim();
+        var scopes = string.IsNullOrWhiteSpace(settings.Scopes) ? ResourceCatalog.DefaultScopes : settings.Scopes.Trim();
         var secrets = new AccountSecrets { ClientSecret = secret };
         string tenantId;
         string mode;

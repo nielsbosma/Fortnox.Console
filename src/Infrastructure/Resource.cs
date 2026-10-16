@@ -36,12 +36,13 @@ public sealed record Resource(
     Ops Ops,
     string[]? Filters = null,
     ResourceAction[]? Actions = null,
-    string? Note = null)
+    string? Note = null,
+    bool Pdf = false)
 {
     public ResourceAction[] AllActions => Actions ?? [];
 }
 
-public static class Resources
+public static class ResourceCatalog
 {
     public static readonly Resource[] All =
     [
@@ -66,7 +67,8 @@ public static class Resources
                 new("external-print", "PUT", "externalprint", "Mark the invoice as sent (printed outside Fortnox)"),
                 new("warehouse-ready", "PUT", "warehouseready", "Mark the invoice as ready for the warehouse")
             ],
-            "Booked invoices cannot be updated or cancelled - credit them instead."),
+            "Booked invoices cannot be updated or cancelled - credit them instead.",
+            Pdf: true),
 
         new("invoice-payments", "invoicepayments", "InvoicePayments", "InvoicePayment", "Number", "payment",
             "Payments received against customer invoices", Ops.Read | Ops.Create | Ops.Update | Ops.Delete, null,
@@ -94,7 +96,8 @@ public static class Resources
                 new("create-invoice", "PUT", "createinvoice", "Create an invoice from the order"),
                 new("cancel", "PUT", "cancel", "Cancel an order", true),
                 new("email", "GET", "email", "Send the order to the customer by email", true)
-            ]),
+            ],
+            Pdf: true),
 
         new("offers", "offers", "Offers", "Offer", "DocumentNumber", "offer",
             "Offers (quotes)", Ops.Read | Ops.Write,
@@ -104,7 +107,8 @@ public static class Resources
                 new("create-invoice", "PUT", "createinvoice", "Create an invoice from the offer"),
                 new("cancel", "PUT", "cancel", "Cancel an offer", true),
                 new("email", "GET", "email", "Send the offer to the customer by email", true)
-            ]),
+            ],
+            Pdf: true),
 
         new("vouchers", "vouchers", "Vouchers", "Voucher", "VoucherSeries/VoucherNumber", "bookkeeping",
             "Vouchers (verifikationer)", Ops.Read | Ops.Create,
