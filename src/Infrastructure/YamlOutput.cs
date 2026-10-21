@@ -6,8 +6,11 @@ namespace Fortnox.Console.Infrastructure;
 
 public static class YamlOutput
 {
+    // Fortnox sends ids, zip codes and organisation numbers as strings that look like numbers.
+    // Unquoted, a YAML reader turns ZipCode "0150" into 150 and CustomerNumber "1" into an int.
     private static readonly ISerializer Serializer = new SerializerBuilder()
         .WithNamingConvention(CamelCaseNamingConvention.Instance)
+        .WithQuotingNecessaryStrings()
         .Build();
 
     public static void Write(JsonDocument doc)
