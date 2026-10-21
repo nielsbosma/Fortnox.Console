@@ -140,7 +140,7 @@ public static class ResourceCatalog
         new("price-lists", "pricelists", "PriceLists", "PriceList", "Code", "price",
             "Price lists", Ops.Read | Ops.Write),
 
-        new("units", "units", "Units", "Unit", "Code", "article",
+        new("units", "units", "Units", "Unit", "Code", "settings",
             "Units of measure", Ops.All)
     ];
 

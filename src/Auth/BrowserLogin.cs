@@ -74,9 +74,11 @@ public static class BrowserLogin
         if (error is not null)
             throw FortnoxException.Auth(
                 $"Fortnox declined the authorization: {error}.",
-                query["error_description"],
                 error.Contains("scope", StringComparison.OrdinalIgnoreCase)
-                    ? "Pass --scopes with only the scopes enabled on the integration in the developer portal."
+                    ? $"{query["error_description"]}\n\nRequested: {scopes}\n\nEvery requested scope must be enabled on the integration in the Fortnox developer portal."
+                    : query["error_description"],
+                error.Contains("scope", StringComparison.OrdinalIgnoreCase)
+                    ? "Enable the missing scopes on the integration, or pass --scopes \"...\" with only the ones it has."
                     : null);
 
         if (query["state"] != state)
