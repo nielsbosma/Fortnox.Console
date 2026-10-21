@@ -4,6 +4,12 @@ using Fortnox.Console.Commands.Resources;
 using Fortnox.Console.Infrastructure;
 using Spectre.Console.Cli;
 
+// On Windows the console defaults to the OEM code page (CP850 on a Swedish install), so piped
+// output turns "Lästmakargatan" into invalid UTF-8 for jq or any JSON reader. Fortnox data is full
+// of å, ä and ö, so stdout, stderr and stdin (for --data -) are UTF-8 everywhere.
+System.Console.OutputEncoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+System.Console.InputEncoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+
 // The error envelope is rendered before any command has run, so the format has to be known
 // before Spectre parses anything. Commands overwrite this with the same value.
 Output.UseJson = args.Contains("--json");

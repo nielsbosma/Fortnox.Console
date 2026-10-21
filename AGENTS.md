@@ -109,11 +109,34 @@ the `AccountSecrets` blob in the keystore.
   https://www.fortnox.se/developer/guides-and-good-to-know/scopes. Asking for a scope that is not
   enabled on the integration fails the consent.
 
-## Not verified against a live company
+- Quirks that a live company exposed:
+  - **PDF needs `Accept: application/json`.** `invoices/{n}/preview` and `print` answer
+    `Accept: application/pdf` with 1000030 "Invalid response type", but return the PDF bytes to
+    the JSON accept header.
+  - **A missing license is a 400**, with code 2001101 ("Det finns ingen aktiv licens för önskat
+    scope"). `FortnoxClient` maps it to `auth_required`, because only a human adding the license
+    fixes it.
+  - **Not-found errors use capitalised keys** (`Message`, `Code`), while other errors use lower
+    case.
+  - **Fortnox ignores `limit` on some small lists** (currencies).
+- **`print` marks the document as sent; `preview` does not.** Never call `print` to test anything.
+- Stdout is forced to UTF-8 in `Program.cs`. The Windows default (OEM code page) garbles å/ä/ö for
+  every pipe.
 
-The OAuth error paths and the loopback listener have been exercised against the real endpoints
-with dummy credentials. A full consent, the action endpoints and the PDF endpoints have not yet been
-run against a real Fortnox company. Check them the first time you use them.
+## Verified against a live company
+
+Verified on 2026-10-21 against a real company that uses `client_credentials`:
+- consent through the browser flow
+- list and get on every resource
+- `--all` paging (12 pages without a 429), filters, date ranges, sorting and `--query`
+- the `pdf` command (preview)
+- the `api` passthrough
+- `accounts list --check` and `accounts test`
+
+Orders and offers were tested only as far as the license error, because that company has no Order
+license. Not yet run against a live company: create, update, delete, or any action (bookkeep,
+cancel, credit, email). The first write you make is the real test, so make it in a sandbox company
+("Testmiljöer" in the developer portal).
 
 ## Releasing
 

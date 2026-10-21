@@ -19,6 +19,9 @@ public sealed class FortnoxClient
 {
     private const int MaxRateLimitRetries = 4;
 
+    /// <summary>"Det finns ingen aktiv licens för önskat scope."</summary>
+    private const string LicenseMissing = "2001101";
+
     private static readonly HttpClient Http = new() { BaseAddress = new Uri("https://api.fortnox.se/3/") };
 
     private readonly ITokenSource _tokens;
@@ -43,7 +46,9 @@ public sealed class FortnoxClient
     /// <summary>For endpoints that answer with a file, such as <c>invoices/{n}/print</c>.</summary>
     public async Task<(byte[] Bytes, string? ContentType)> GetBytesAsync(string path)
     {
-        using var response = await SendAsync(HttpMethod.Get, path, null, "application/pdf, */*");
+        // Fortnox answers "Invalid response type" (1000030) to Accept: application/pdf and serves
+        // the PDF to Accept: application/json.
+        using var response = await SendAsync(HttpMethod.Get, path, null);
         return (await response.Content.ReadAsByteArrayAsync(), response.Content.Headers.ContentType?.MediaType);
     }
 
@@ -91,6 +96,12 @@ public sealed class FortnoxClient
     {
         using (response)
         {
+            var type = response.Content.Headers.ContentType?.MediaType;
+            if (type is not null && !type.Contains("json", StringComparison.OrdinalIgnoreCase))
+                throw FortnoxException.Invalid(
+                    $"The endpoint answered with {type}, not JSON.",
+                    "For invoices, orders and offers use '<resource> pdf <id> -o <file>'.");
+
             var body = await response.Content.ReadAsStringAsync();
             return string.IsNullOrWhiteSpace(body) ? JsonDocument.Parse("{}") : JsonDocument.Parse(body);
         }
@@ -107,6 +118,15 @@ public sealed class FortnoxClient
         var (message, code) = ErrorInformation(body);
         var detail = $"HTTP {status}" + (body.Length == 0 ? "" : ": " + body);
         var summary = message is null ? null : code is null ? message : $"{message} (Fortnox code {code})";
+
+        // 2001101 arrives as a 400 but is not a bad call: the company does not subscribe to the
+        // module behind this endpoint (e.g. Order for orders and offers). No retry or change to
+        // the request helps; a human has to add the license in Fortnox.
+        if (code == LicenseMissing)
+            throw FortnoxException.Auth(
+                "The company has no Fortnox license for this resource" + (summary is null ? "." : $": {summary}"),
+                detail,
+                "Stop. The company needs the module in Fortnox (see https://www.fortnox.se/developer/guides-and-good-to-know/scopes for which license each scope needs).");
 
         throw response.StatusCode switch
         {
