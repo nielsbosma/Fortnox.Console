@@ -6,9 +6,18 @@ LLM agent as well as by people.
 
 ## Installation
 
+This tool is not published to NuGet. Build it from source, and the build installs it as the global
+`fortnox` command:
+
 ```bash
-dotnet tool install -g Fortnox.Console
+git clone https://github.com/nielsbosma/Fortnox.Console.git
 ```
+
+```bash
+dotnet build Fortnox.Console/src/Fortnox.Console.csproj
+```
+
+Every later build reinstalls it, so `fortnox` always runs the code you last built.
 
 ## Output
 

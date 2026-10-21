@@ -25,9 +25,7 @@ reinstall an existing version number, NuGet can serve the old package from its c
 reinstall fails, usually because a `fortnox` process is still running, the build still succeeds
 but prints a warning. The target is skipped in CI (`CI=true`) and with `-p:SkipLocalInstall=true`.
 
-Once a NuGet release is installed, a local build replaces it, because the target passes
-`--allow-downgrade`. To go back to the release, run
-`dotnet tool update -g Fortnox.Console --allow-downgrade`.
+The target passes `--allow-downgrade`, so a build always replaces whatever version is installed.
 
 Test against a throwaway config so real credentials are never touched:
 
@@ -119,5 +117,6 @@ run against a real Fortnox company. Check them the first time you use them.
 
 ## Releasing
 
-CI builds every push to `main`. Publishing a GitHub Release `vX.Y.Z` packs the tool and pushes it to
-NuGet using the `NUGET_API_KEY` repository secret.
+This tool is **not published to NuGet**. That is a deliberate break from `../ConsoleGuidelines.md`.
+It is installed only from source, through the local build (see Commands). CI builds every push to
+`main` and publishes nothing. Do not add a NuGet publish job back.
