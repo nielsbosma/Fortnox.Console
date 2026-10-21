@@ -14,15 +14,20 @@ The manual that the *agent* reads comes from `fortnox agent-readme`, in
 ## Commands
 
 ```bash
-dotnet build src/Fortnox.Console.csproj -c Release
-dotnet src/bin/Release/net10.0/Fortnox.Console.dll <args>
-
-dotnet pack src/Fortnox.Console.csproj -c Release -p:Version=0.1.0 --output ./nupkgs
-dotnet tool install --global --add-source ./nupkgs Fortnox.Console --version 0.1.0
+dotnet build src/Fortnox.Console.csproj      # also reinstalls the global `fortnox`
+fortnox <args>
 ```
 
-`dotnet build` does not update the installed `fortnox`, so repack and reinstall after a change.
-Bump the version every time, because NuGet caches by version.
+**Every local build reinstalls the global tool.** The `InstallLocalTool` target in the csproj runs
+after `Build`. It packs the build into `nupkgs/local` under a fresh version,
+`0.0.0-local.<utc timestamp>`, and runs `dotnet tool update -g`. The fresh version matters: if you
+reinstall an existing version number, NuGet can serve the old package from its cache. If the
+reinstall fails, usually because a `fortnox` process is still running, the build still succeeds
+but prints a warning. The target is skipped in CI (`CI=true`) and with `-p:SkipLocalInstall=true`.
+
+Once a NuGet release is installed, a local build replaces it, because the target passes
+`--allow-downgrade`. To go back to the release, run
+`dotnet tool update -g Fortnox.Console --allow-downgrade`.
 
 Test against a throwaway config so real credentials are never touched:
 

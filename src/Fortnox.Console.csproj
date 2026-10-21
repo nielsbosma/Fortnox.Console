@@ -23,6 +23,37 @@
     <None Include="..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
+  <!--
+    Local builds reinstall the global `fortnox` tool, so the command on PATH is always what was
+    just built. Each build packs under a fresh version: reinstalling an existing version number
+    can be served from the NuGet cache and silently give back the old package.
+    Skipped in CI (GitHub Actions sets CI=true), inside the pack this target starts, and with
+    -p:SkipLocalInstall=true.
+  -->
+  <PropertyGroup>
+    <LocalToolFeed>$(MSBuildThisFileDirectory)..\nupkgs\local</LocalToolFeed>
+  </PropertyGroup>
+
+  <Target Name="InstallLocalTool" AfterTargets="Build"
+          Condition="'$(CI)' != 'true' and '$(SkipLocalInstall)' != 'true' and '$(IsPacking)' != 'true'">
+    <PropertyGroup>
+      <LocalToolVersion>0.0.0-local.$([System.DateTime]::UtcNow.ToString('yyyyMMddHHmmss'))</LocalToolVersion>
+    </PropertyGroup>
+    <ItemGroup>
+      <OldLocalPackages Include="$(LocalToolFeed)\*.nupkg" />
+    </ItemGroup>
+    <Delete Files="@(OldLocalPackages)" />
+    <Exec Command="dotnet pack &quot;$(MSBuildProjectFullPath)&quot; --no-build -c $(Configuration) -p:Version=$(LocalToolVersion) -p:SkipLocalInstall=true -p:IsPacking=true -o &quot;$(LocalToolFeed)&quot; --nologo -v q" />
+    <Exec Command="dotnet tool update --global $(PackageId) --add-source &quot;$(LocalToolFeed)&quot; --version $(LocalToolVersion) --allow-downgrade"
+          ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="LocalInstallExit" />
+    </Exec>
+    <Warning Condition="'$(LocalInstallExit)' != '0'"
+             Text="The build succeeded, but reinstalling the global fortnox tool failed. Close any running fortnox process and build again." />
+    <Message Condition="'$(LocalInstallExit)' == '0'" Importance="high"
+             Text="fortnox $(LocalToolVersion) installed globally ($(Configuration))." />
+  </Target>
+
   <ItemGroup>
     <PackageReference Include="Spectre.Console.Cli" Version="0.49.1" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
