@@ -32,6 +32,8 @@ public static class BrowserLogin
 
         var url = FortnoxOAuth.BuildAuthorizeUrl(clientId, redirectUri, scopes, state, challenge, service);
 
+        await Preflight(url, redirectUri, scopes);
+
         using var listener = new HttpListener();
         var path = redirect.AbsolutePath.EndsWith('/') ? redirect.AbsolutePath : redirect.AbsolutePath + "/";
         listener.Prefixes.Add($"http://{redirect.Host}:{redirect.Port}{path}");
@@ -88,6 +90,49 @@ public static class BrowserLogin
             throw FortnoxException.Auth("The redirect carried no authorization code.", context.Request.Url?.ToString());
 
         return new Result(code, verifier);
+    }
+
+    /// <summary>
+    /// Fortnox validates the client id, redirect URI and scopes before anyone logs in: a bad
+    /// client id or redirect URI answers 400, and a scope problem redirects straight back with
+    /// <c>error=</c>. Asking first turns a browser round trip ending in "Authorization failed"
+    /// into an immediate, specific error.
+    /// </summary>
+    private static async Task Preflight(string url, string redirectUri, string scopes)
+    {
+        HttpResponseMessage response;
+        try
+        {
+            using var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false });
+            response = await http.GetAsync(url);
+        }
+        catch (HttpRequestException)
+        {
+            return; // Let the browser try; the listener reports whatever comes back.
+        }
+
+        using (response)
+        {
+            if (response.StatusCode == HttpStatusCode.BadRequest)
+                throw FortnoxException.Invalid(
+                    "Fortnox rejected the authorization request: the client id is unknown, or the redirect URI is not the one registered on the integration.",
+                    $"Check the client id, and that the integration's redirect URI is exactly {redirectUri}.");
+
+            var location = response.Headers.Location?.ToString();
+            if (location is null || !location.StartsWith(redirectUri, StringComparison.OrdinalIgnoreCase)) return;
+
+            var query = System.Web.HttpUtility.ParseQueryString(new Uri(location).Query);
+            var error = query["error"];
+            if (error is null) return;
+
+            if (error == "invalid_scope")
+                throw FortnoxException.Auth(
+                    "Fortnox declined the scopes before login: invalid_scope.",
+                    $"{query["error_description"]}\n\nRequested: {scopes}\n\nThe integration does not have all of these enabled. If even --scopes companyinformation fails, it has none saved.",
+                    "Enable and save the scopes on the integration in the developer portal, or pass --scopes \"...\" with only the ones it has.");
+
+            throw FortnoxException.Auth($"Fortnox declined the authorization before login: {error}.", query["error_description"]);
+        }
     }
 
     private static async Task Respond(HttpListenerResponse response, string message)
