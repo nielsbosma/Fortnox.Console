@@ -5,3 +5,6 @@ obj/
 .vs/
 nupkgs/
 nupkg/
+
+# Local data exports
+export/
